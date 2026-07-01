@@ -15,5 +15,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::defaultView('vendor.pagination.tailwind');
+        
+        \Illuminate\Support\Facades\Blade::directive('highlight', function ($expression) {
+            return "<?php echo \App\Helpers\HighlightHelper::highlight({$expression}); ?>";
+        });
     }
 }

@@ -11,9 +11,29 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $users = User::latest()->paginate(10);
+        $query = User::query();
+
+        if ($search = $request->get('search')) {
+            $query->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
+        $allowedSorts = ['name', 'email', 'role', 'created_at'];
+        
+        if (in_array($sort, $allowedSorts) && in_array($direction, ['asc', 'desc'])) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->latest();
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $users = $query->paginate($perPage)->withQueryString();
 
         return view('users.index', compact('users'));
     }
@@ -73,6 +93,10 @@ class UserController extends Controller
     {
         if ($user->id === auth()->id()) {
             return back()->with('error', 'Tidak dapat menghapus akun sendiri.');
+        }
+
+        if ($user->transactions()->exists()) {
+            return back()->with('error', 'Gagal menghapus pengguna: Pengguna ini memiliki riwayat transaksi.');
         }
 
         $user->delete();

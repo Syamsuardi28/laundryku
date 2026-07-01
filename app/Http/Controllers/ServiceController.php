@@ -10,9 +10,29 @@ use Illuminate\View\View;
 
 class ServiceController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $services = Service::latest()->paginate(10);
+        $query = Service::query();
+
+        if ($search = $request->get('search')) {
+            $query->where('nama_layanan', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%");
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
+        $allowedSorts = ['nama_layanan', 'harga_per_kg', 'created_at'];
+        
+        if (in_array($sort, $allowedSorts) && in_array($direction, ['asc', 'desc'])) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->latest();
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $services = $query->paginate($perPage)->withQueryString();
 
         return view('services.index', compact('services'));
     }
@@ -107,6 +127,10 @@ class ServiceController extends Controller
     public function destroy(Service $service): RedirectResponse
     {
         abort_if(! auth()->user()->isAdmin(), 403, 'Akses ditolak. Hanya Admin yang dapat menghapus layanan.');
+
+        if ($service->transactions()->exists()) {
+            return back()->with('error', 'Gagal menghapus layanan: Layanan ini sedang digunakan pada transaksi yang ada.');
+        }
 
         try {
             $service->delete();

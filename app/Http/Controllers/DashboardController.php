@@ -31,11 +31,16 @@ class DashboardController extends Controller
         // Data grafik pendapatan bulanan
         $monthLabels = [];
         $monthData   = [];
+        
+        $yearlyTransactions = Transaction::selectRaw('MONTH(created_at) as month, SUM(total_harga) as total')
+            ->whereYear('created_at', now()->year)
+            ->groupBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
+
         for ($i = 1; $i <= 12; $i++) {
             $monthLabels[] = \Carbon\Carbon::create(null, $i, 1)->translatedFormat('M');
-            $monthData[]   = (int) Transaction::whereYear('created_at', now()->year)
-                ->whereMonth('created_at', $i)
-                ->sum('total_harga');
+            $monthData[]   = (int) ($yearlyTransactions[$i] ?? 0);
         }
 
         $statusChart = [

@@ -59,6 +59,8 @@ class CustomerApiController extends Controller
 
         $customer = Customer::create($validated);
 
+        \Illuminate\Support\Facades\Log::info('API Customer Created', ['id' => $customer->id, 'nama' => $customer->nama]);
+
         return response()->json([
             'success'  => true,
             'message'  => 'Pelanggan berhasil ditambahkan.',

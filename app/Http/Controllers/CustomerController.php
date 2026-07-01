@@ -22,7 +22,20 @@ class CustomerController extends Controller
             });
         }
 
-        $customers = $query->latest()->paginate(10)->withQueryString();
+        // Sorting
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
+        $allowedSorts = ['nama', 'telepon', 'created_at'];
+        
+        if (in_array($sort, $allowedSorts) && in_array($direction, ['asc', 'desc'])) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->latest();
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $customers = $query->paginate($perPage)->withQueryString();
 
         return view('customers.index', compact('customers'));
     }
@@ -111,6 +124,10 @@ class CustomerController extends Controller
     public function destroy(Customer $customer): RedirectResponse
     {
         abort_if(! auth()->user()->isAdmin(), 403, 'Akses ditolak. Hanya Admin yang dapat menghapus pelanggan.');
+
+        if ($customer->transactions()->exists()) {
+            return back()->with('error', 'Gagal menghapus pelanggan: Pelanggan ini memiliki data transaksi. Hapus transaksi terlebih dahulu atau biarkan data pelanggan tetap ada.');
+        }
 
         try {
             $customer->delete();

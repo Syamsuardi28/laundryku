@@ -46,7 +46,7 @@
             </div>
 
             {{-- Smart Customer Search --}}
-            <div class="relative" x-data="customerSearch()" x-init="init()">
+            <div class="relative" x-data="customerSearch()" x-init="init()" @customer-created.window="selectCustomer($event.detail)">
 
                 {{-- Hidden input for form submission --}}
                 <input type="hidden" name="customer_id" id="customer_id" x-model="selectedId" required>
@@ -599,8 +599,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 // AJAX: Modal Tambah Pelanggan Baru
 // ============================================================
-document.getElementById('form-add-customer').addEventListener('submit', async function(e) {
-    e.preventDefault();
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('form-add-customer');
+    if (!form) return;
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
 
     const btn    = document.getElementById('btn-save-customer');
     const btnTxt = document.getElementById('btn-save-text');
@@ -641,14 +645,8 @@ document.getElementById('form-add-customer').addEventListener('submit', async fu
             alert.className = 'mb-4 flex items-center gap-2 rounded-xl border border-success/20 bg-success-50 px-4 py-3 text-sm font-medium text-success dark:bg-success-500/10';
             alert.classList.remove('hidden');
 
-            // Select customer di form utama via Alpine
-            const alpineEl = document.querySelector('[x-data]');
-            if (alpineEl && alpineEl._x_dataStack) {
-                const component = Alpine.$data(alpineEl);
-                if (component.onCustomerCreated) {
-                    component.onCustomerCreated(data.customer);
-                }
-            }
+            // Dispatch custom event untuk ditangkap oleh komponen Alpine
+            window.dispatchEvent(new CustomEvent('customer-created', { detail: data.customer }));
 
             // Reset form & close modal setelah 800ms
             setTimeout(() => {
@@ -684,6 +682,7 @@ document.getElementById('form-add-customer').addEventListener('submit', async fu
         btn.disabled = false;
         btnTxt.textContent = 'Simpan & Pilih';
     }
+    });
 });
 </script>
 @endpush

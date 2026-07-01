@@ -12,13 +12,23 @@
 
 {{-- Search Bar --}}
 <div class="card mb-6 p-4">
-    <form method="GET" class="flex flex-col gap-3 sm:flex-row" id="form-search-pelanggan">
-        <div class="relative flex-1">
+    <form method="GET" class="flex flex-col gap-3 sm:flex-row items-center" id="form-search-pelanggan" x-data x-ref="form">
+        <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-slate-500">Tampilkan</span>
+            <select name="per_page" @change="$refs.form.submit()" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20">
+                @foreach([10, 25, 50, 100] as $val)
+                <option value="{{ $val }}" @selected(request('per_page', 10) == $val)>{{ $val }}</option>
+                @endforeach
+            </select>
+        </div>
+        
+        <div class="relative flex-1 w-full">
             <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <input type="text" name="search" id="search-pelanggan" value="{{ request('search') }}" placeholder="Cari nama, telepon, atau alamat..."
+                   @input.debounce.500ms="$refs.form.submit()"
                    class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-4 text-sm transition-all focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-400">
         </div>
-        <button type="submit" class="btn-secondary" id="btn-cari-pelanggan">
+        <button type="submit" class="btn-secondary hidden sm:flex" id="btn-cari-pelanggan">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             Cari
         </button>
@@ -45,8 +55,8 @@
         <table class="table-modern w-full text-sm">
             <thead>
                 <tr>
-                    <th class="px-6 py-4 text-left">Pelanggan</th>
-                    <th class="px-6 py-4 text-left">Telepon</th>
+                    <th class="px-6 py-4 text-left"><x-ui.sortable-header column="nama">Pelanggan</x-ui.sortable-header></th>
+                    <th class="px-6 py-4 text-left"><x-ui.sortable-header column="telepon">Telepon</x-ui.sortable-header></th>
                     <th class="px-6 py-4 text-left">Alamat</th>
                     <th class="px-6 py-4 text-right">Aksi</th>
                 </tr>
@@ -59,17 +69,17 @@
                             <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-blue-100 text-sm font-bold text-primary dark:from-primary/20 dark:to-blue-500/20 dark:text-primary-100 shrink-0">
                                 {{ strtoupper(substr($customer->nama, 0, 1)) }}
                             </div>
-                            <span class="font-semibold text-slate-900 dark:text-white">{{ $customer->nama }}</span>
+                            <span class="font-semibold text-slate-900 dark:text-white">@highlight($customer->nama, request('search'))</span>
                         </div>
                     </td>
                     <td class="px-6 py-4">
                         <a href="tel:{{ $customer->telepon }}" class="hover:text-primary transition-colors">
-                            {{ $customer->telepon }}
+                            @highlight($customer->telepon, request('search'))
                         </a>
                     </td>
                     <td class="px-6 py-4">
                         <span class="max-w-[200px] block truncate" title="{{ $customer->alamat ?? '-' }}">
-                            {{ $customer->alamat ?? '-' }}
+                            @highlight($customer->alamat ?? '-', request('search'))
                         </span>
                     </td>
                     <td class="px-6 py-4">

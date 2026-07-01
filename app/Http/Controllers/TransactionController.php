@@ -25,13 +25,46 @@ class TransactionController extends Controller
             });
         }
 
+        // Advanced Filters
         if ($status = $request->get('status')) {
             $query->where('status', $status);
         }
+        if ($paymentStatus = $request->get('status_pembayaran')) {
+            $query->where('status_pembayaran', $paymentStatus);
+        }
+        if ($customerId = $request->get('customer_id')) {
+            $query->where('customer_id', $customerId);
+        }
+        if ($serviceId = $request->get('service_id')) {
+            $query->where('service_id', $serviceId);
+        }
+        if ($startDate = $request->get('start_date')) {
+            $query->whereDate('tanggal_masuk', '>=', $startDate);
+        }
+        if ($endDate = $request->get('end_date')) {
+            $query->whereDate('tanggal_masuk', '<=', $endDate);
+        }
 
-        $transactions = $query->latest()->paginate(10)->withQueryString();
+        // Sorting
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
+        $allowedSorts = ['invoice_number', 'berat', 'total_harga', 'status', 'created_at'];
+        
+        if (in_array($sort, $allowedSorts) && in_array($direction, ['asc', 'desc'])) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->latest();
+        }
 
-        return view('transactions.index', compact('transactions'));
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $transactions = $query->paginate($perPage)->withQueryString();
+
+        // Data for filter dropdowns
+        $customers = Customer::orderBy('nama')->get();
+        $services = Service::orderBy('nama_layanan')->get();
+
+        return view('transactions.index', compact('transactions', 'customers', 'services'));
     }
 
     public function create(): View
