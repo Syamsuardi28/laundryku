@@ -19,5 +19,10 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Blade::directive('highlight', function ($expression) {
             return "<?php echo \App\Helpers\HighlightHelper::highlight({$expression}); ?>";
         });
+
+        // Force HTTPS if running behind a proxy like Localtunnel/Ngrok
+        if (request()->header('x-forwarded-proto') === 'https') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
     }
 }
